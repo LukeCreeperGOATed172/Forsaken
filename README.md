@@ -12,84 +12,99 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
+            justify-content: flex-start; /* Aligns to top so it's safely scrollable */
+            min-height: 100vh;
             margin: 0;
-            overflow: hidden;
+            padding: 20px 10px; /* Gives nice breathing room */
+            box-sizing: border-box;
+            overflow-y: auto; /* Allows scrolling if window is too small */
             user-select: none;
         }
-        h1 { color: #800; margin-bottom: 5px; text-shadow: 0 0 10px #f00; letter-spacing: 2px; }
+        h1 { color: #800; margin: 0 0 5px 0; text-shadow: 0 0 10px #f00; letter-spacing: 2px; text-align: center;}
+        
+        /* Layout wrapper to hold everything tight */
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 800px;
+            width: 100%;
+        }
+
         #gameCanvas {
             border: 4px solid #300;
             background-color: #141414;
             box-shadow: 0 0 30px #000;
+            max-width: 100%;
+            height: auto;
         }
-        #ui { width: 800px; display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; font-size: 18px;}
-        .bars-container { display: flex; flex-direction: column; gap: 5px; width: 800px; margin-top: 5px; }
-        .bar-row { display: flex; justify-content: space-between; font-size: 14px; }
-        .stamina-bar, .health-bar { width: 150px; height: 12px; background: #333; border: 1px solid #555; display: inline-block; vertical-align: middle;}
+        #ui { width: 100%; display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; font-size: 18px;}
+        .bars-container { display: flex; flex-direction: column; gap: 5px; width: 100%; margin-top: 8px; }
+        .bar-row { display: flex; justify-content: space-between; font-size: 14px; gap: 10px; }
+        .stamina-bar, .health-bar { width: 140px; height: 12px; background: #333; border: 1px solid #555; display: inline-block; vertical-align: middle;}
         .fill { height: 100%; transition: width 0.1s; }
         #p1-stamina-fill { background: #00bcff; width: 100%; }
         #p2-stamina-fill { background: #ff0000; width: 100%; }
         #p1-health-fill { background: #00ff00; width: 100%; }
-        .instructions { color: #666; font-size: 13px; margin-top: 10px; text-align: center; line-height: 1.4; }
+        .instructions { color: #aaa; font-size: 13px; margin: 15px 0 0 0; text-align: center; line-height: 1.5; background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px; width: 100%; box-sizing: border-box; }
         #timer { color: #ffcc00; font-size: 22px; }
     </style>
 </head>
 <body>
 
-    <h1>FORSAKEN: SKATE & SURVIVE</h1>
-    
-    <div id="ui">
-        <div id="status" style="color: #0f0;">SURVIVE THE MATCH!</div>
-        <div id="timer">60s</div>
-    </div>
+    <div class="game-container">
+        <h1>FORSAKEN: SKATE & SURVIVE</h1>
+        
+        <div id="ui">
+            <div id="status" style="color: #0f0;">SURVIVE THE MATCH!</div>
+            <div id="timer">60s</div>
+        </div>
 
-    <canvas id="gameCanvas" width="800" height="500"></canvas>
+        <!-- Shrunk height from 500 to 450 to fit screens much better -->
+        <canvas id="gameCanvas" width="800" height="450"></canvas>
 
-    <div class="bars-container">
-        <div class="bar-row">
-            <div>
-                <span style="color: #00bcff;">P1 Skater Stamina:</span>
-                <div class="stamina-bar"><div id="p1-stamina-fill" class="fill"></div></div>
+        <div class="bars-container">
+            <div class="bar-row">
+                <div>
+                    <span style="color: #00bcff;">P1 Skater Stamina:</span>
+                    <div class="stamina-bar"><div id="p1-stamina-fill" class="fill"></div></div>
+                </div>
+                <div>
+                    <span style="color: #ff0000;">P2 Killer Stamina:</span>
+                    <div class="stamina-bar"><div id="p2-stamina-fill" class="fill"></div></div>
+                </div>
             </div>
-            <div>
-                <span style="color: #ff0000;">P2 Killer Stamina:</span>
-                <div class="stamina-bar"><div id="p2-stamina-fill" class="fill"></div></div>
+            <div class="bar-row">
+                <div>
+                    <span style="color: #00ff00;">P1 Skater Health:</span>
+                    <div class="health-bar"><div id="p1-health-fill" class="fill"></div></div>
+                </div>
+                <div style="color: #888; font-size: 12px; font-weight: bold;">Press [R] to Restart Match</div>
             </div>
         </div>
-        <div class="bar-row">
-            <div>
-                <span style="color: #00ff00;">P1 Skater Health:</span>
-                <div class="health-bar"><div id="p1-health-fill" class="fill"></div></div>
-            </div>
-            <div style="color: #aaa; font-size: 11px;">Press [R] to Restart Match</div>
-        </div>
-    </div>
 
-    <div class="instructions">
-        <strong>P1 SURVIVOR (Skater):</strong> W/A/S/D to Skate | Hold SHIFT to Sprint<br>
-        <strong>P2 KILLER (Guest 666):</strong> ARROW KEYS to Hunt | Hold SPACEBAR to Sprint | Press <strong>'/' or Numpad Enter</strong> to Attack
+        <div class="instructions">
+            <strong>P1 SURVIVOR (Skater):</strong> W/A/S/D to Skate | Hold SHIFT to Sprint<br>
+            <strong>P2 KILLER (Guest 666):</strong> ARROW KEYS to Hunt | Hold SPACEBAR to Sprint | Press <strong>'/' or Numpad Enter</strong> to Attack
+        </div>
     </div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        // Game Variables
         let timeLeft, gameOver, gameWon, countdown, p1, p2;
 
         const obstacles = [
-            { x: 180, y: 120, w: 80, h: 80 },
-            { x: 540, y: 300, w: 80, h: 80 },
-            { x: 360, y: 200, w: 80, h: 100 },
-            { x: 180, y: 340, w: 120, h: 40 },
-            { x: 500, y: 120, w: 120, h: 40 }
+            { x: 180, y: 100, w: 80, h: 80 },
+            { x: 540, y: 270, w: 80, h: 80 },
+            { x: 360, y: 170, w: 80, h: 100 },
+            { x: 180, y: 310, w: 120, h: 40 },
+            { x: 500, y: 100, w: 120, h: 40 }
         ];
 
         const keys = {};
 
-        // Reset and Initial Setup
         function initGame() {
             if (countdown) clearInterval(countdown);
             
@@ -102,14 +117,14 @@
             document.getElementById("timer").innerText = "60s";
 
             p1 = {
-                x: 100, y: 250, size: 15,
+                x: 100, y: 225, size: 15,
                 baseSpeed: 4.5, sprintSpeed: 7,
                 stamina: 100, health: 100,
                 color: "#00bcff", iFrames: 0
             };
 
             p2 = {
-                x: 700, y: 250, size: 22,
+                x: 700, y: 225, size: 22,
                 baseSpeed: 3.5, sprintSpeed: 6.5,
                 stamina: 100, color: "#ff0000",
                 attackCooldown: 0
@@ -128,7 +143,6 @@
             }, 1000);
         }
 
-        // Safe Input Listeners to completely prevent browser interception crashes
         window.addEventListener("keydown", e => {
             if ([" ", "/", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(e.key.toLowerCase())) {
                 e.preventDefault();
@@ -136,7 +150,6 @@
             keys[e.key.toLowerCase()] = true;
             keys[e.key] = true; 
 
-            // Restart match trigger
             if (e.key.toLowerCase() === 'r') {
                 initGame();
             }
@@ -231,7 +244,6 @@
                 }
             }
 
-            // Update Bars
             document.getElementById("p1-stamina-fill").style.width = p1.stamina + "%";
             document.getElementById("p2-stamina-fill").style.width = p2.stamina + "%";
             document.getElementById("p1-health-fill").style.width = p1.health + "%";
@@ -258,7 +270,7 @@
             ctx.fillRect(p1.x + 10, p1.y - 9, 6, 3);
             ctx.fillRect(p1.x + 10, p1.y + 6, 6, 3);
 
-            // Skater (Flashing red hit feedback)
+            // Skater
             if (p1.iFrames > 0 && Math.floor(p1.iFrames / 4) % 2 === 0) {
                 ctx.fillStyle = "rgba(255, 0, 0, 0.6)";
             } else {
@@ -280,7 +292,7 @@
             ctx.fillRect(p2.x - 6, p2.y - 6, 4, 4);
             ctx.fillRect(p2.x - 6, p2.y + 2, 4, 4);
 
-            // Red Attack Swing Ring
+            // Attack Swing Ring
             if (p2.attackCooldown > 12) {
                 ctx.strokeStyle = "rgba(255, 0, 0, 0.6)";
                 ctx.lineWidth = 3;
